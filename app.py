@@ -2,7 +2,6 @@ from flask import Flask, request, send_file
 from pymessenger import Bot
 from docx import Document
 import requests
-import os
 
 app = Flask(__name__)
 
