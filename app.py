@@ -71,7 +71,7 @@ def rental_contract(sender_id, text):
             file_link = generate_document(sender_id, conversation_state[sender_id]["answers"])
             # Reset the conversation state for the next conversation
             del conversation_state[sender_id]
-            return f"สำเร็จแล้ว! คลิกที่ลิงก์เพื่อดาวน์โหลดไฟล์: {file_link}"
+            return f"คลิกที่ลิงก์เพื่อดาวน์โหลดไฟล์: {file_link}"
 
         
 def generate_document(sender_id, answers):
