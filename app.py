@@ -71,7 +71,6 @@ def rental_contract(sender_id, text):
         if len(conversation_state[sender_id]["answers"]) == 1:
             conversation_state[sender_id]["answers"].append(text)
             file_link = generate_document(sender_id, conversation_state[sender_id]["answers"])
-            # Process further actions or end the conversation
             # Reset the conversation state for the next conversation
             del conversation_state[sender_id]
             return f"สำเร็จแล้ว! คลิกที่ลิงก์เพื่อดาวน์โหลดไฟล์: {file_link}"
