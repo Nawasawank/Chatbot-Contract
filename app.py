@@ -64,7 +64,6 @@ def rental_contract(sender_id, text):
     if step == 2:
         if len(conversation_state[sender_id]["answers"]) == 0:
             conversation_state[sender_id]["answers"].append(text)
-            # Ask the second question
             conversation_state[sender_id]["step"] = 3
             return "กรุณากรอกชื่อผู้ทำสัญญาคนที่ 2"
     elif step == 3:
