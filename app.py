@@ -47,7 +47,6 @@ def process_message(message_text, sender_id):
     if step == 1:
         if text == "สัญญาเช่า":
             conversation_state[sender_id]["contract_type"] = "rental"
-            rental_contract(sender_id, text)
             conversation_state[sender_id]["step"] = 2
             return "กรุณากรอกชื่อผู้ทำสัญญาคนที่ 1"
         else:
