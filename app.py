@@ -23,11 +23,10 @@ def verify_token(req):
 @app.route("/webhook", methods=["GET", "POST"])
 def listen():
     if request.method == "GET":
-        # validate verify token
         return verify_token(request)
     if request.method == 'POST':
         payload = request.json
-        print(payload)  # Check the payload received from Facebook
+        print(payload)
 
         for entry in payload["entry"]:
             for messaging_event in entry["messaging"]:
