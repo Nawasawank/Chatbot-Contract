@@ -10,7 +10,7 @@ VERIFY_TOKEN = "VF token for education ecosystem"
 PAGE_ACCESS_TOKEN = 'EAAKZC9fRhwiYBOZCHby87Mxhx5Q7OcIFRfE7pLFSZC4XfHKGebbiRTYNxU6pCEdl4DtZByXuPUdaAGEAZA45GJlDgt57ZBTFN6ZBDz8OWcBncQ4V73KXIjws0BOf31nqUiBOPtbupZBziykCChLgdHzBai7ySIsJIJZBw5zACnIXn4tXzwptlNbFVawsA5m27C8nx'
 bot = Bot(PAGE_ACCESS_TOKEN)
 
-conversation_state = {}  # Dictionary to store conversation state
+conversation_state = {} 
 
 def verify_token(req):
     if req.args.get("hub.verify_token") == VERIFY_TOKEN:
