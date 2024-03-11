@@ -2,11 +2,14 @@ from flask import Flask, request, send_file
 from pymessenger import Bot
 from docx import Document
 import requests
+from dotenv import load_dotenv
+from os import environ 
+load_dotenv()
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = "VF token for education ecosystem"
-PAGE_ACCESS_TOKEN = 'EAAKZC9fRhwiYBOZCHby87Mxhx5Q7OcIFRfE7pLFSZC4XfHKGebbiRTYNxU6pCEdl4DtZByXuPUdaAGEAZA45GJlDgt57ZBTFN6ZBDz8OWcBncQ4V73KXIjws0BOf31nqUiBOPtbupZBziykCChLgdHzBai7ySIsJIJZBw5zACnIXn4tXzwptlNbFVawsA5m27C8nx'
+VERIFY_TOKEN = environ["VERIFY_TOKEN"]
+PAGE_ACCESS_TOKEN = environ["PAGE_ACCESS_TOKEN"]
 bot = Bot(PAGE_ACCESS_TOKEN)
 
 conversation_state = {} 
