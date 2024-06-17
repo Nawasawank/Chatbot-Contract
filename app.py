@@ -11,13 +11,11 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# LINE Bot configuration
 LINE_CHANNEL_ACCESS_TOKEN = environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = environ.get("LINE_CHANNEL_SECRET")
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-# Database configuration
 POSTGRES_HOST = environ.get("POSTGRES_HOST")
 POSTGRES_USER = environ.get("POSTGRES_USER")
 POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD")
