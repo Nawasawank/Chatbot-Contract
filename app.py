@@ -1,12 +1,14 @@
-from flask import Flask, request, send_file, abort
+from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import LineBotApiError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from dotenv import load_dotenv
 from os import environ
 import threading
-from database import db, State 
-from contracts.rental import rental_contract  
+from database import db, State
+from contracts.rental import rental_contract
+import logging
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -24,9 +26,10 @@ SQLALCHEMY_DATABASE_URI = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{PO
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-
 db.init_app(app)
 
+with app.app_context():
+    db.create_all()
 
 @app.route("/webhook", methods=['POST', 'GET'])
 def webhook_handler():
@@ -44,7 +47,6 @@ def webhook_handler():
         app.logger.error(f"An error occurred: {str(e)}")
         abort(500, description="Internal Server Error")
 
-
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     try:
@@ -61,7 +63,6 @@ def handle_message(event):
     except Exception as e:
         app.logger.error(f"An unexpected error occurred: {str(e)}")
 
-
 def process_and_reply(event, sender_id, message_text):
     with app.app_context():
         response = process_message(message_text, sender_id)
@@ -75,7 +76,6 @@ def process_and_reply(event, sender_id, message_text):
             except LineBotApiError as e:
                 app.logger.error(f"An error occurred while replying: {str(e)}")
 
-
 def process_message(message_text, sender_id):
     text = message_text
     curstate = State.query.filter_by(sender_id=sender_id).first()
@@ -86,15 +86,11 @@ def process_message(message_text, sender_id):
     else:
         if curstate.type_contract == "rental":
             return rental_contract(sender_id, text)
-        # elif type == "sale":
-        #    return sale_contract(sender_id, text, conversation_state)
     if text == "สัญญาเช่า":
         return rental_contract(sender_id, text)
-    # elif text == "สัญญาขาย":
-    #    return sale_contract(sender_id, text, conversation_state)
     else:
         return "ประเภทของสัญญาไม่ถูกต้อง"
 
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+

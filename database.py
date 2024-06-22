@@ -38,3 +38,10 @@ class State(db.Model):
     sender_id = db.Column(db.String(100), nullable=False)
     current_state = db.Column(db.String(100), nullable=False)
     type_contract = db.Column(db.String(100), nullable=False)
+
+class buy(db.Model):
+    __tablename__ = 'buy'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.String(100), nullable=False)
+    current_state = db.Column(db.String(100), nullable=False)
+    type_contract = db.Column(db.String(100), nullable=False)
