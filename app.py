@@ -1,13 +1,13 @@
 from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import LineBotApiError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.v3 import WebhookHandler
+from linebot.v3.exceptions import InvalidSignatureError
+from linebot.v3.messaging import Configuration, ApiClient, MessagingApi, ReplyMessageRequest, TextMessage
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from dotenv import load_dotenv
 from os import environ
 import threading
 from database import db, State
 from contracts.rental import rental_contract
-import logging
 
 load_dotenv()
 
@@ -15,7 +15,8 @@ app = Flask(__name__)
 
 LINE_CHANNEL_ACCESS_TOKEN = environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = environ.get("LINE_CHANNEL_SECRET")
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 POSTGRES_HOST = environ.get("POSTGRES_HOST")
@@ -43,54 +44,57 @@ def webhook_handler():
         app.logger.info("Received LINE payload: " + body)
         handler.handle(body, signature)
         return 'OK'
+    except InvalidSignatureError:
+        app.logger.error("Invalid signature. Please check your channel access token/channel secret.")
+        abort(400)
     except Exception as e:
         app.logger.error(f"An error occurred: {str(e)}")
         abort(500, description="Internal Server Error")
 
-@handler.add(MessageEvent, message=TextMessage)
+@handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     try:
+        thread = threading.Thread(target=process_and_reply, args=(event,))
+        thread.start()
+    except Exception as e:
+        app.logger.error(f"An error occurred while replying: {str(e)}")
+
+def process_and_reply(event):
+    with app.app_context():
         sender_id = event.source.user_id
         message_text = event.message.text
-        app.logger.info(f"Handling message from user {sender_id}")
-        app.logger.info(f"Message text: {message_text}")
-        app.logger.info(f"Reply token: {event.reply_token}")
-
-        thread = threading.Thread(target=process_and_reply, args=(event, sender_id, message_text))
-        thread.start()
-    except LineBotApiError as e:
-        app.logger.error(f"An error occurred: {str(e)}")
-    except Exception as e:
-        app.logger.error(f"An unexpected error occurred: {str(e)}")
-
-def process_and_reply(event, sender_id, message_text):
-    with app.app_context():
         response = process_message(message_text, sender_id)
+
         if response:
             try:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text=response)
-                )
-                app.logger.info("Reply sent successfully")
-            except LineBotApiError as e:
-                app.logger.error(f"An error occurred while replying: {str(e)}")
+                with ApiClient(configuration) as api_client:
+                    line_bot_api = MessagingApi(api_client)
+                    line_bot_api.reply_message_with_http_info(
+                        ReplyMessageRequest(
+                            reply_token=event.reply_token,
+                            messages=[TextMessage(text=response)]
+                        )
+                    )
+            except Exception as e:
+                app.logger.error(f"An error occurred while sending the reply: {str(e)}")
 
 def process_message(message_text, sender_id):
-    text = message_text
     curstate = State.query.filter_by(sender_id=sender_id).first()
     if not curstate:
         curstate = State(sender_id=sender_id, current_state="1", type_contract="")
         db.session.add(curstate)
         db.session.commit()
-    else:
-        if curstate.type_contract == "rental":
-            return rental_contract(sender_id, text)
-    if text == "สัญญาเช่า":
-        return rental_contract(sender_id, text)
+        return "Welcome! Please specify the type of contract you are interested in."
+
+    if message_text == "สัญญาเช่า":
+        curstate.type_contract = "rental"
+        db.session.commit()
+        return rental_contract(sender_id, message_text)
+
+    if curstate.type_contract == "rental":
+        return rental_contract(sender_id, message_text)
     else:
         return "ประเภทของสัญญาไม่ถูกต้อง"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-

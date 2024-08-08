@@ -10,6 +10,7 @@ class Rent(db.Model):
     district1 = db.Column(db.String(255))
     province1 = db.Column(db.String(255))
     name2 = db.Column(db.String(255))
+    idcard2 = db.Column(db.String(255)) #add this
     age2 = db.Column(db.String(255))
     house2 = db.Column(db.String(255))
     vilno2 = db.Column(db.String(255))
@@ -34,13 +35,6 @@ class Rent(db.Model):
 
 class State(db.Model):
     __tablename__ = 'current_state'
-    id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.String(100), nullable=False)
-    current_state = db.Column(db.String(100), nullable=False)
-    type_contract = db.Column(db.String(100), nullable=False)
-
-class buy(db.Model):
-    __tablename__ = 'buy'
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.String(100), nullable=False)
     current_state = db.Column(db.String(100), nullable=False)
