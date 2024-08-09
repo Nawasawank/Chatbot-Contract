@@ -6,6 +6,7 @@ from uploadfile import upload_to_fileio
 from bahttext import bahttext
 from pythainlp.tag import NER
 import re
+from linebot.v3.messaging import  QuickReply, QuickReplyItem, PostbackAction
 
 ner = NER("thainer")
 
@@ -52,252 +53,259 @@ def rental_contract(sender_id, text):
     entities = ner.tag(text)
     print("Named Entities:", entities)
     
+    response = ""
+    quick_reply = None
+    
     if current_state_value == "1":
         curstate.type_contract = "rental"
         curstate.current_state = "2"
         db.session.commit()
-        return "กรุณากรอกสถานที่ทำสัญญา"
+        response = "กรุณากรอกสถานที่ทำสัญญา"
     elif current_state_value == "2":
         place = CheckPlace(text)
-        print(place)
         if not place:
-            return "กรุณาระบุสถานที่ให้ถูกต้อง"
-        rent_entry = Rent(sender_id=sender_id, place=place)
-        db.session.add(rent_entry)
-        db.session.commit()
-        curstate.current_state = "3"
-        db.session.commit()
-        return "กรุณากรอกชื่อผู้ให้เช่า"
+            response = "กรุณาระบุสถานที่ให้ถูกต้อง"
+        else:
+            rent_entry = Rent(sender_id=sender_id, place=place)
+            db.session.add(rent_entry)
+            db.session.commit()
+            curstate.current_state = "3"
+            db.session.commit()
+            response = "กรุณากรอกชื่อผู้ให้เช่า"
     elif current_state_value == "3":
-        name1= CheckPerson(text)
+        name1 = CheckPerson(text)
         if not name1:
-            return "กรุณากรอกชื่อผู้ให้เช่าที่ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกชื่อผู้ให้เช่าที่ถูกต้อง"
+        else:
             rent_entry.name1 = name1
             db.session.commit()
             curstate.current_state = "4"
             db.session.commit()
-            return "กรุณากรอกที่อยู่อำเภอผู้ให้เช่า"
+            response = "กรุณากรอกที่อยู่อำเภอผู้ให้เช่า"
     elif current_state_value == "4":
         place = CheckPlace(text)
         if not place:
-            return "กรุณาระบุอำเภอที่ให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณาระบุอำเภอที่ให้ถูกต้อง"
+        else:
             rent_entry.district1 = text
             db.session.commit()
             curstate.current_state = "5"
             db.session.commit()
-            return "กรุณากรอกจังหวัด"
+            response = "กรุณากรอกจังหวัด"
     elif current_state_value == "5":
         province = CheckPlace(text)
         if not province:
-            return "กรุณาระบุจังหวัดให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณาระบุจังหวัดให้ถูกต้อง"
+        else:
             rent_entry.province1 = text
             db.session.commit()
             curstate.current_state = "6"
             db.session.commit()
-            return "กรุณากรอกชื่อผู้เช่า"
+            response = "กรุณากรอกชื่อผู้เช่า"
     elif current_state_value == "6":
         name2 = CheckPerson(text)
         if not name2:
-            return "กรุณากรอกชื่อผู้เช่าให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกชื่อผู้เช่าให้ถูกต้อง"
+        else:
             rent_entry.name2 = text
             db.session.commit()
             curstate.current_state = "7"
             db.session.commit()
-            return "กรุณากรอกเลขบัตรประชาชน"
+            response = "กรุณากรอกเลขบัตรประชาชน"
     elif current_state_value == "7":
         idcard2 = Check_IDcard(text)
         if not idcard2:
-            return "กรุณากรอกเลขบัตรประชาชนให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกเลขบัตรประชาชนให้ถูกต้อง"
+        else:
             rent_entry.idcard2 = text
             db.session.commit()
             curstate.current_state = "8"
             db.session.commit()
-            return "กรุณากรอกอายุผู้เช่า"
+            response = "กรุณากรอกอายุผู้เช่า"
     elif current_state_value == "8":
         if text.isnumeric(): 
-            if rent_entry:
-                rent_entry.age2 = text
-                db.session.commit()
-                curstate.current_state = "9"
-                db.session.commit()
-                return "กรุณากรอกบ้านเลขที่"
+            rent_entry.age2 = text
+            db.session.commit()
+            curstate.current_state = "9"
+            db.session.commit()
+            response = "กรุณากรอกบ้านเลขที่"
         else:
-            return "กรุณากรอกอายุเป็นตัวเลข"
+            response = "กรุณากรอกอายุเป็นตัวเลข"
     elif current_state_value == "9":
         no_address = Check_NumberAddress(text)
         if not no_address:
-            return "กรุณากรอกบ้านเลขที่ให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกบ้านเลขที่ให้ถูกต้อง"
+        else:
             rent_entry.house2 = text
             db.session.commit()
             curstate.current_state = "10"
             db.session.commit()
-            return "กรุณากรอกหมู่"
+            response = "กรุณากรอกหมู่"
     elif current_state_value == "10":
         if text.isnumeric(): 
-            if rent_entry:
-                rent_entry.vilno2 = text
-                db.session.commit()
-                curstate.current_state = "11"
-                db.session.commit()
-                return "ถนน"
+            rent_entry.vilno2 = text
+            db.session.commit()
+            curstate.current_state = "11"
+            db.session.commit()
+            response = "ถนน"
         else:
-            return "กรุณากรอกหมู่ให้ถูกต้อง"
+            response = "กรุณากรอกหมู่ให้ถูกต้อง"
     elif current_state_value == "11":
         road = CheckPlace(text)
         if not road:
-            return "กรุณากรอกถนนให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกถนนให้ถูกต้อง"
+        else:
             rent_entry.street2 = text
             db.session.commit()
             curstate.current_state = "12"
             db.session.commit()
-            return "ซอย"
+            response = "ซอย"
     elif current_state_value == "12":
         soi = CheckPlace(text)
         if not soi:
-            return "กรุณากรอกซอยให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกซอยให้ถูกต้อง"
+        else:
             rent_entry.lane2 = text
             db.session.commit()
             curstate.current_state = "13"
             db.session.commit()
-            return "ตำบล/แขวง"
+            response = "ตำบล/แขวง"
     elif current_state_value == "13":
         Subdistrict = CheckPlace(text)
         if not Subdistrict:
-            return "กรุณากรอกตำบลให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกตำบลให้ถูกต้อง"
+        else:
             rent_entry.subd2 = text
             db.session.commit()
             curstate.current_state = "14"
             db.session.commit()
-            return "อำเภอ/เขต"
+            response = "อำเภอ/เขต"
     elif current_state_value == "14":
         district = CheckPlace(text)
         if not district:
-            return "กรุณากรอกอำเภอให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกอำเภอให้ถูกต้อง"
+        else:
             rent_entry.district2 = text
             db.session.commit()
             curstate.current_state = "15"
             db.session.commit()
-            return "จังหวัด"
+            response = "จังหวัด"
     elif current_state_value == "15":
         province = CheckPlace(text)
         if not province:
-            return "กรุณากรอกจังหวัดให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกจังหวัดให้ถูกต้อง"
+        else:
             rent_entry.province2 = text
             db.session.commit()
             curstate.current_state = "16"
             db.session.commit()
-            return "เลขบัตรประชาชน"
+            response = "กรุณากรอกชื่อผู้ออกบัตรประชาชน"
     elif current_state_value == "16":
-        if rent_entry:
-            if re.fullmatch(r'\d{13}', text):
-                rent_entry.idcard2 = text
-                db.session.commit()
-                curstate.current_state = "17"
-                db.session.commit()
-                return "ชื่อผู้ออกบัตร"
-            else:
-                return "กรุณาใส่หมายเลขบัตรประชาชนที่ถูกต้อง 13 หลัก"
-    elif current_state_value == "17":
         name_card = CheckPerson(text)
         if not name_card:
-            return "กรุณากรอกชื่อผู้ออกบัตรให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกชื่อผู้ออกบัตรให้ถูกต้อง"
+        else:
             rent_entry.authority = text
+            db.session.commit()
+            curstate.current_state = "17"
+            db.session.commit()
+            response = "วันที่ออกบัตร"
+    elif current_state_value == "17":
+        date = CheckDate(text)
+        if not date:
+            response = "กรุณากรอกวันที่ให้ถูกต้อง"
+        else:
+            rent_entry.dateofid = text
             db.session.commit()
             curstate.current_state = "18"
             db.session.commit()
-            return "วันที่ออกบัตร"
+
+            quick_reply = QuickReply(items=[
+                QuickReplyItem(action=PostbackAction(label="บ้าน", data="property_house")),
+                QuickReplyItem(action=PostbackAction(label="ที่ดิน", data="property_land"))
+            ])
+            response = "กรุณากรอกสิ่งที่เช่า"
     elif current_state_value == "18":
-        date = CheckDate(text)
-        if not date:
-            return "กรุณากรอกวันที่ให้ถูกต้อง"
-        if rent_entry:
-            rent_entry.dateofid = text
+        if text == "property_house":
+            rent_entry.property = "บ้าน"
             db.session.commit()
             curstate.current_state = "19"
             db.session.commit()
-            return "กรุณากรอกสิ่งที่เช่า"
+            response = "กรุณากรอกรายละเอียดบ้าน"
+        elif text == "property_land":
+            rent_entry.property = "ที่ดิน"
+            db.session.commit()
+            curstate.current_state = "19"
+            db.session.commit()
+            response = "กรุณากรอกรายละเอียดที่ดิน"
     elif current_state_value == "19":
-        if rent_entry:
-            rent_entry.property = text
-            db.session.commit()
-            curstate.current_state = "20"
-            db.session.commit()
-            return "กรุณากรอกวัตถุประสงค์ในการเช่า"
+        rent_entry.detail_property = text
+        db.session.commit()
+        curstate.current_state = "20"
+        db.session.commit()
+        response = "กรุณากรอกวัตถุประสงค์ในการเช่า"
     elif current_state_value == "20":
-        if rent_entry:
-            rent_entry.purpose = text
-            db.session.commit()
-            curstate.current_state = "22"
-            db.session.commit()
-            return "ระยะเวลาในการเช่า(ex. 3 ปี)"
+        rent_entry.purpose = text
+        db.session.commit()
+        curstate.current_state = "21"
+        db.session.commit()
+        response = "ระยะเวลาในการเช่า (ex. 3 ปี)"
     elif current_state_value == "21":
-        if rent_entry:
-            rent_entry.duration = text
-            db.session.commit()
-            curstate.current_state = "22"
-            db.session.commit()
-            return "วันที่เริ่มเช่า"
+        rent_entry.duration = text
+        db.session.commit()
+        curstate.current_state = "22"
+        db.session.commit()
+        response = "วันที่เริ่มเช่า"
     elif current_state_value == "22":
         fromdate = CheckDate(text)
         if not fromdate:
-            return "กรุณากรอกวันที่เริ่มเช่าให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกวันที่เริ่มเช่าให้ถูกต้อง"
+        else:
             rent_entry.fromdate = text
             db.session.commit()
             curstate.current_state = "23"
             db.session.commit()
-            return "วันที่สิ้นสุดการเช่า"
+            response = "วันที่สิ้นสุดการเช่า"
     elif current_state_value == "23":
         todate = CheckDate(text)
         if not todate:
-            return "กรุณากรอกวันที่สิ้นสุดการเช่าให้ถูกต้อง"
-        if rent_entry:
+            response = "กรุณากรอกวันที่สิ้นสุดการเช่าให้ถูกต้อง"
+        else:
             rent_entry.todate = text
             db.session.commit()
             curstate.current_state = "24"
             db.session.commit()
-            return "ประเภทการจ่ายค่าเช่า(รายวัน/รายเดือน/รายปี)"
+            response = "ประเภทการจ่ายค่าเช่า (รายวัน/รายเดือน/รายปี)"
     elif current_state_value == "24":
-        if rent_entry:
-            rent_entry.typeofrent = text
-            db.session.commit()
-            curstate.current_state = "25"
-            db.session.commit()
-            return "จำนวนเงินค่าเช่า"
+        rent_entry.typeofrent = text
+        db.session.commit()
+        curstate.current_state = "25"
+        db.session.commit()
+        response = "จำนวนเงินค่าเช่า"
     elif current_state_value == "25":
-        if rent_entry:
-            rent_entry.price = text
-            db.session.commit()
-            curstate.current_state = "26"
-            db.session.commit()
-            return "วันที่กำหนดชำระ"
+        rent_entry.price = text
+        db.session.commit()
+        curstate.current_state = "26"
+        db.session.commit()
+        response = "วันที่กำหนดชำระ"
     elif current_state_value == "26":
-        if rent_entry:
-            rent_entry.duedate = text
-            db.session.commit()
-            curstate.current_state = "27"
-            db.session.commit()
-            return "กรุณากรอกผู้เสียภาษีจากการเช่า"
+        rent_entry.duedate = text
+        db.session.commit()
+        curstate.current_state = "27"
+        db.session.commit()
+        response = "กรุณากรอกผู้เสียภาษีจากการเช่า"
     elif current_state_value == "27":
-        if rent_entry:
-            rent_entry.tax = text
-            db.session.commit()
-            file_link = generate_document_rent(sender_id)
-            db.session.delete(curstate)
-            db.session.commit()
-            return f"คลิกที่ลิงก์เพื่อดาวน์โหลดไฟล์: {file_link}"
+        rent_entry.tax = text
+        db.session.commit()
+        file_link = generate_document_rent(sender_id)
+        db.session.delete(curstate)
+        db.session.commit()
+        response = f"คลิกที่ลิงก์เพื่อดาวน์โหลดไฟล์: {file_link}"
+
+    if quick_reply:
+        return response, quick_reply
+    else:
+        return response, None
 
 def generate_document_rent(sender_id):
     rent_entry = db.session.query(Rent).filter_by(sender_id=sender_id).order_by(Rent.id.desc()).first()
@@ -351,11 +359,11 @@ def generate_document_rent(sender_id):
     first = doc.add_paragraph()
     first_head = first.add_run(f"ข้อ 1. ")
     first_head.bold = True
-    first.add_run(f"ผู้ให้เช่าตกลงให้เช่าและผู้เช่าตกลงเช่า {rent_entry.property} ")
-    first.add_run(f"โดยมีวัตถุประสงค์เพื่อ {rent_entry.purpose} ")
+    first.add_run(f"ผู้ให้เช่าตกลงให้เช่าและผู้เช่าตกลงเช่า {rent_entry.property} โดยมีรายละเอียดดังนี้ {rent_entry.detail_property} ")
+    first.add_run(f"มีวัตถุประสงค์เพื่อ {rent_entry.purpose} ")
     first.add_run(f"มีกำหนดเวลาเช่า {rent_entry.duration} (วัน/เดือน/ปี) ตั้งแต่วันที่ {rent_entry.fromdate} ถึงวันที่ {rent_entry.todate} ")
     first.add_run(f"โดยผู้เช่าตกลงจ่ายค่าเช่าเป็นราย (วัน/เดือน/ปี) {rent_entry.typeofrent} ละ {rent_entry.price} บาท ({thai_text_price}) ")
-    first.add_run(f"มีกำหนดชำระ {rent_entry.duedate} ของทุก ๆ เดือน ส่วนเงินค่าภาษี อันเกิดจากทรัพย์สินที่เช่านี้ให้ {rent_entry.tax} เป็นผู้เสีย")
+    first.add_run(f"มีกำหนดชำระวันที่ {rent_entry.duedate} ของทุก ๆ เดือน ส่วนเงินค่าภาษี อันเกิดจากทรัพย์สินที่เช่านี้ให้ {rent_entry.tax} เป็นผู้เสีย")
     first.paragraph_format.line_spacing = Pt(18)
     first.paragraph_format.first_line_indent = Pt(36)
     first.paragraph_format.space_before = Pt(0)

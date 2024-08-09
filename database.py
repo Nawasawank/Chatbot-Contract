@@ -10,7 +10,6 @@ class Rent(db.Model):
     district1 = db.Column(db.String(255))
     province1 = db.Column(db.String(255))
     name2 = db.Column(db.String(255))
-    idcard2 = db.Column(db.String(255)) #add this
     age2 = db.Column(db.String(255))
     house2 = db.Column(db.String(255))
     vilno2 = db.Column(db.String(255))
@@ -23,6 +22,7 @@ class Rent(db.Model):
     authority = db.Column(db.String(255))
     dateofid = db.Column(db.String(255))
     property = db.Column(db.String(255))
+    detail_property = db.Column(db.String(255))
     purpose = db.Column(db.String(255))
     duration = db.Column(db.String(255))
     fromdate = db.Column(db.String(255))
